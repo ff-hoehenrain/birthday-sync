@@ -12,13 +12,15 @@ function getActiveBirthdays(rawData) {
 
   var activeBirthdays = []
   rawData.forEach(value => {
-    const name = "Geburtstag: " + value[4] + " " + value[3];
+    const firstname = value[4];
+    const lastname = value[3];
     const date = value[8];
     const state = value[6];
 
     if(state === 'aktiv') {
       const birthday = {
-        name : name,
+        firstname : firstname,
+        lastname : lastname,
         date : date
       }
       activeBirthdays.push(birthday);
@@ -42,22 +44,21 @@ function syncBirthdayWithCalendar(calendar, birthdays) {
   const currentDate = new Date();
 
   birthdays.forEach(birthday => {
-    name = birthday.name;
-    date = birthday.date;
-
-    const year = currentDate.getFullYear();
+    const date = birthday.date;
+    const currentYear = currentDate.getFullYear();
     const month = date.getUTCMonth();
     const day = date.getUTCDate();
-    const birthdayDate = new Date(year, month, day, 3, 0);
-    const endBirthdayDate = new Date(year, month, day, 3, 0);
+    const birthdayDate = new Date(currentYear, month, day, 3, 0);
+    const age = currentYear - date.getFullYear();
+    const endBirthdayDate = new Date(currentYear, month, day, 3, 0);
 
-    const recurrence = CalendarApp.newRecurrence().addYearlyRule();
+    const name = age + ". Geburtstag von " + birthday.firstname + " " + birthday.lastname;
 
     Logger.log("Currently processing birthday with title=" + name + " at " + birthdayDate);
 
     const events = calendar.getEventsForDay(birthdayDate, {search: name});
     if(events.length === 0) {
-      calendar.createEventSeries(name, birthdayDate, endBirthdayDate, recurrence);
+      calendar.createEvent(name, birthdayDate, endBirthdayDate);
     }
 
     Logger.log("Successfully proccessed event.");
@@ -76,4 +77,14 @@ function birthdayReminder() {
   syncBirthdayWithCalendar(calendar, activeBirthdays);
 
   Logger.log("Successfully executed birthday reminder!");
+}
+
+function cleanup() {
+  const calendar = getBirthdayCalendar();
+
+  calendar.getEvents(new Date('Jan 01 2022'), new Date('Dec 31 2022')).forEach(event => {
+    Logger.log("Currently deleting event at" + event.toString());
+    
+    event.deleteEvent();
+  })
 }
