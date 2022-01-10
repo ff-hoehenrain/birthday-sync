@@ -17,7 +17,7 @@ function getActiveBirthdays(rawData) {
     const date = value[8];
     const state = value[6];
 
-    if(state === 'aktiv') {
+    if(state === 'aktiv' || state === 'jugend') {
       const birthday = {
         firstname : firstname,
         lastname : lastname,
@@ -30,10 +30,41 @@ function getActiveBirthdays(rawData) {
   return activeBirthdays;
 }
 
-function getBirthdayCalendar() {
-  Logger.log("Get birthday calendar...");
+function getPassiveBirthdays(rawData) {
+  Logger.log("Filtering passive birthdays out...");
+
+  var passiveBirthdays = []
+  rawData.forEach(value => {
+    const firstname = value[4];
+    const lastname = value[3];
+    const date = value[8];
+    const state = value[6];
+
+    if(state === 'passiv') {
+      const birthday = {
+        firstname : firstname,
+        lastname : lastname,
+        date : date
+      }
+      passiveBirthdays.push(birthday);
+    }
+  });
+
+  return passiveBirthdays;
+}
+
+function getActiveBirthdayCalendar() {
+  Logger.log("Get active birthday calendar...");
 
   const calendar = CalendarApp.getCalendarById('c_j010drga8ov53i6ce1imrjie54@group.calendar.google.com');
+
+  return calendar;
+}
+
+function getPassiveBirthdayCalendar() {
+  Logger.log("Get passive birthday calendar...");
+
+  const calendar = CalendarApp.getCalendarById('c_jcrml7eh3t9t0lp8jk8bpct614@group.calendar.google.com');
 
   return calendar;
 }
@@ -70,17 +101,21 @@ function birthdayReminder() {
 
   const rawData = getRawData();
   const activeBirthdays = getActiveBirthdays(rawData);
-  const calendar = getBirthdayCalendar();
+  const passiveBirthdays = getPassiveBirthdays(rawData);
+  const activeBirthdayCalendar = getActiveBirthdayCalendar();
+  const passiveBirthdayCalendar = getPassiveBirthdayCalendar();
 
-  Logger.log("Size of birthdays=" + activeBirthdays.length);
-
-  syncBirthdayWithCalendar(calendar, activeBirthdays);
+  Logger.log("Size of active birthdays=" + activeBirthdays.length);
+  syncBirthdayWithCalendar(activeBirthdayCalendar, activeBirthdays);
+  
+  Logger.log("Size of passive birthdays=" + passiveBirthdays.length);
+  syncBirthdayWithCalendar(passiveBirthdayCalendar, passiveBirthdays);
 
   Logger.log("Successfully executed birthday reminder!");
 }
 
 function cleanup() {
-  const calendar = getBirthdayCalendar();
+  const calendar = getActiveBirthdayCalendar();
 
   calendar.getEvents(new Date('Jan 01 2022'), new Date('Dec 31 2022')).forEach(event => {
     Logger.log("Currently deleting event at" + event.toString());
